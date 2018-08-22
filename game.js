@@ -24,7 +24,15 @@ function setup() {
     }
 
     document.getElementById("canvas").addEventListener("click", e => {
-        spawnCell(Math.round(e.x / window.res), Math.round(e.y / window.res));
+        spawnVirus(Math.round(e.x / window.res), Math.round(e.y / window.res));
+    });
+
+    document.addEventListener("keypress", e => {
+        if (e.keyCode === 32) {
+            const x = Math.round(Math.random()*(window.width/window.res));
+            const y = Math.round(Math.random()*(window.height/window.res));
+            spawnVillage(x,y);
+        }
     });
 }
 
@@ -36,22 +44,24 @@ function draw() {
     ctx.fillRect(0, 0, this.width, this.height);
 
     // --------------- grid ---------------------------------------------
-    ctx.strokeStyle = "black";
     for (let i = 0; i < window.grid.length; i++) {
         for (let j = 0; j < window.grid[i].length; j++) {
             const cell = window.grid[i][j];
+            let l;
             if (cell.state === 0) {
                 ctx.fillStyle = "black";
             } else if (cell.state === 1) {
-                ctx.fillStyle = hslToHex(200, 80, 40 + cell.age);
+                l = 40 + cell.age/2 > 100 ? 100 : 40 + cell.age/2;
+                ctx.fillStyle = hslToHex(200, 80, l);
             } else if (cell.state === 2) {
-                ctx.fillStyle = hslToHex(120, 80, 40 + cell.age);
+                l = 40 + cell.age/2 > 100 ? 100 : 40 + cell.age/2;
+                ctx.fillStyle = hslToHex(180, 80, l);
             } else if (cell.state === -1) {
-                ctx.fillStyle = hslToHex(350, 80, 40 - cell.age / 4);
+                l = 40 - cell.age/2 < 0 ? 0 : 40 - cell.age/2;
+                ctx.fillStyle = hslToHex(350, 80, l);
             }
 
-            ctx.fillRect(i * window.res, j * window.res, window.res, window.res);
-            ctx.strokeRect(i * window.res, j * window.res, window.res, window.res);
+            ctx.fillRect(i * window.res+1, j * window.res+1, window.res-2, window.res-2);
         }
     }
 
@@ -82,9 +92,21 @@ function spawnCell(x, y) {
     window.grid[x][y].state = window.grid[x][y].state * -1 + 1;
 }
 
+function spawnVillage(x, y) {
+    const getCell = (x, y) => window.grid[x][y];
+    getCell(x, y).state = 2;
+    getCell(x-1, y).state = 1;
+    getCell(x, y-1).state = 1;
+    getCell(x, y+1).state = 1;
+    getCell(x+1, y).state = 1;
+}
+
 function spawnVirus(x, y) {
     const getCell = (x, y) => window.grid[x][y];
     getCell(x, y).state = -1;
+    getCell(x+1, y).state = -1;
+    getCell(x, y+1).state = -1;
+    getCell(x+1, y+1).state = -1;
 }
 
 // ----------- draw functions ------------------------------------------------------------------------------------------
