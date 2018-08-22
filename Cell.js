@@ -1,62 +1,132 @@
 class Cell {
-  constructor(x,y) {
-    this.x = x;
-    this.y = y;
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
 
-    this.age = 1;
+        this.age = 1;
 
-    const iState = Math.random() > 0.01 ? 0 : 1;
-    this.state = iState;
-    this.prevState = iState;
-  }
+        const iState = Math.random() > 0.1 ? 0 : 1;
+        this.state = iState;
+        this.prevState = iState;
+    }
 
-  update() {
-    this.prevState = this.state;
-    let iLiving = this.getNeighbors().reduce((acc, c) => {
-      return acc + c.prevState;
-    }, 0);
-    switch (iLiving) {
-      case 2:
-        break;
-      case 3:
-        this.state = 1;
-        break;
-      default:
+    reset() {
+        this.age = 0;
         this.state = 0;
     }
-    if (this.prevState === 1 && this.state === 1) {
-      this.age++;
-    } else {
-      this.age = 1;
+
+    update() {
+        this.prevState = this.state;
+
+        // --------- dieing --------------------------------------------------------------------------------------------
+        const iCellLife = 20;
+        const iHouseLife = 50;
+        const iVirusLife = 150;
+
+        switch (this.state) {
+            case 1:
+                if(this.age > iCellLife) {
+                    this.reset();
+                    return;
+                }
+                break;
+            case 2:
+                this.age++;
+                if (this.age > iHouseLife) {
+                    this.reset();
+                }
+                return;
+            case -1:
+                this.age++;
+                if (this.age > iVirusLife) {
+                    this.reset();
+                    return;
+                }
+                break;
+            default:
+                break;
+        }
+
+        // --------- evolution -----------------------------------------------------------------------------------------
+        const aNeighbors = this.getNeighbors();
+        const aLiving = aNeighbors.filter(e => e.prevState > 0);
+        const iLiving = aLiving.length;
+
+        // ------------------- virus -----------------------------------------------------------------------------------
+        if (this.state === 1) {
+            const aVirus = aNeighbors.filter(e => e.state === -1);
+            if (aVirus.length === 1) {
+                this.state = 0;
+                return;
+            } else if (aVirus.length > 2) {
+                this.state = Math.random() > 0.2 ? -1 : 0;
+                return;
+            }
+        }
+
+        // --------- rules ---------------------------------------------------------------------------------------------
+        switch (iLiving) {
+            case 2:
+                break;
+            case 3:
+                this.state = 1;
+                break;
+            case 4:
+                if (!window.advanced) {
+                    this.state = 0;
+                    break;
+                }
+
+                if (aLiving.find(e => e.x === this.x-1 && e.y === this.y)) {
+                    if (aLiving.find(e => e.x === this.x && e.y === this.y-1)) {
+                        if (aLiving.find(e => e.x === this.x+1 && e.y === this.y)) {
+                            if (aLiving.find(e => e.x === this.x && e.y === this.y+1)) {
+                                this.state = 2;
+                                break;
+                            }
+                        }
+                    }
+                }
+                this.state = 0;
+                break;
+            default:
+                this.state = 0;
+        }
+
+        // --------- aging ---------------------------------------------------------------------------------------------
+        if (this.prevState === 1 && this.state === 1) {
+            this.age++;
+        } else {
+            this.age = 0;
+        }
     }
-  }
 
-  getNeighbors() {
-    const getCell = function(x,y) {
-      if (x < 0 || y < 0) {
-        return;
-      }
+    getNeighbors() {
+        const getCell = function (x, y) {
+            if (x < 0 || y < 0) {
+                return;
+            }
 
-      if (window.grid[x] && window.grid[x][y]) {
-        return window.grid[x][y];
-      }
+            if (window.grid[x] && window.grid[x][y]) {
+                return window.grid[x][y];
+            }
+        };
+
+        const arr = [
+            getCell(this.x - 1, this.y - 1),
+            getCell(this.x - 1, this.y),
+            getCell(this.x - 1, this.y + 1),
+            getCell(this.x, this.y - 1),
+            getCell(this.x, this.y + 1),
+            getCell(this.x + 1, this.y - 1),
+            getCell(this.x + 1, this.y),
+            getCell(this.x + 1, this.y + 1),
+        ];
+
+        const temp = [];
+        for (let i of arr)
+            i && temp.push(i);
+
+        return temp;
     }
-
-    const arr = [
-      getCell(this.x-1,this.y-1),
-      getCell(this.x-1,this.y),
-      getCell(this.x-1,this.y+1),
-      getCell(this.x,this.y-1),
-      getCell(this.x,this.y+1),
-      getCell(this.x+1,this.y-1),
-      getCell(this.x+1,this.y),
-      getCell(this.x+1,this.y+1),
-    ];
-
-    const temp = [];
-    for (let i of arr)
-      i && temp.push(i);
-
-    return temp;
-  }
 }
